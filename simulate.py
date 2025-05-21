@@ -9,12 +9,11 @@ positive_vec_path = "onnx_export/positive.npy"
 negative_vec_path = "onnx_export/negative.npy"
 image_folder = "samples"  # or any folder with test images
 
-# === Load model and prompt vectors ===
+# Load ONNX model and text embeddings
 session = ort.InferenceSession(onnx_model_path)
 positive_vec = np.load(positive_vec_path)
 negative_vec = np.load(negative_vec_path)
 
-# === Image preprocessing (CLIP style) ===
 def preprocess_image(path):
     image = Image.open(path).convert("RGB").resize((224, 224))
     image_np = np.array(image).astype(np.float32) / 255.0
@@ -28,11 +27,9 @@ def preprocess_image(path):
     image_np = image_np.transpose(2, 0, 1)[None, :, :, :]  # [1, 3, 224, 224]
     return image_np.astype(np.float32)
 
-# === Cosine similarity ===
 def cosine(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
-# === Score image ===
 def score_image(path):
     inputs = {"pixel_values": preprocess_image(path)}
     outputs = session.run(["image_embeds"], inputs)
@@ -42,8 +39,8 @@ def score_image(path):
     neg_sim = cosine(image_vec, negative_vec)
     return (pos_sim - neg_sim) * 1000
 
-# === Run test on all images ===
-print("\n🧪 Scoring images using ONNX Runtime...\n")
+# Score images
+print("Scoring images using ONNX Runtime...")
 for fname in os.listdir(image_folder):
     if not fname.lower().endswith((".jpg", ".jpeg", ".png")):
         continue
