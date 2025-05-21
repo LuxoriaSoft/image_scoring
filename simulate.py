@@ -3,7 +3,7 @@ import numpy as np
 import onnxruntime as ort
 from PIL import Image
 
-# === Config ===
+# Config
 onnx_model_path = "onnx_export/clip_image_encoder.onnx"
 positive_vec_path = "onnx_export/positive.npy"
 negative_vec_path = "onnx_export/negative.npy"
@@ -14,7 +14,11 @@ session = ort.InferenceSession(onnx_model_path)
 positive_vec = np.load(positive_vec_path)
 negative_vec = np.load(negative_vec_path)
 
+# Preprocess image
 def preprocess_image(path):
+    """
+    Preprocess the image for CLIP model.
+    """
     image = Image.open(path).convert("RGB").resize((224, 224))
     image_np = np.array(image).astype(np.float32) / 255.0
 
@@ -27,10 +31,18 @@ def preprocess_image(path):
     image_np = image_np.transpose(2, 0, 1)[None, :, :, :]  # [1, 3, 224, 224]
     return image_np.astype(np.float32)
 
+# Compute cosine similarity
 def cosine(a, b):
+    """
+    Compute cosine similarity between two vectors.
+    """
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
+# Score image using ONNX model
 def score_image(path):
+    """
+    Score the image using the ONNX model and return the similarity score.
+    """
     inputs = {"pixel_values": preprocess_image(path)}
     outputs = session.run(["image_embeds"], inputs)
     image_vec = outputs[0][0]  # [1, 512] -> [512]
